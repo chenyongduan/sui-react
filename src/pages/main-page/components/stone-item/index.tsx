@@ -2,8 +2,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import { Button, Input, Modal, Tooltip, notification } from "antd";
 import { useWalletKit } from "@mysten/wallet-kit";
 import { JsonRpcProvider } from "@mysten/sui.js";
-import { checkWalletConnect, fullPriceToSuiPrice } from "../../../../utils";
-import Stone from "../stone";
+import { checkWalletConnect, fullPriceToSuiPrice } from "qUtils";
 import {
   STONE_MARKET_LIST_METHOD,
   STONE_MARKET_MODULE_NAME,
@@ -11,7 +10,8 @@ import {
   STONE_MARKET_SHARE_ID,
   STONE_TYPE,
   SUI_COIN_TYPE,
-} from "../../../../constants";
+} from "qConstants";
+import Stone from "../stone";
 import styles from "./index.module.less";
 
 type Props = {

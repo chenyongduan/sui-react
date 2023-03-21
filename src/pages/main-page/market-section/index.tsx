@@ -4,8 +4,8 @@ import { useWalletKit } from "@mysten/wallet-kit";
 import { isEmpty } from "underscore";
 import { Spin } from "antd";
 import StoneItem from "../components/stone-item";
-import { STONE_MARKET_SHARE_ID } from "../../../constants";
-import EmptyPage from "../../../components/empty-page";
+import { STONE_MARKET_SHARE_ID } from "qConstants";
+import EmptyPage from "qComponents/empty-page";
 import styles from "./index.module.less";
 
 type NftData = {

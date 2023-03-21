@@ -14,9 +14,9 @@ import {
   STONE_PACKAGE_ID,
   STONE_REGISTER_SHARE_ID,
   STONE_TYPE,
-} from "../../../constants";
-import { checkWalletConnect } from "../../../utils";
-import EmptyPage from "../../../components/empty-page";
+} from "qConstants";
+import { checkWalletConnect } from "qUtils";
+import EmptyPage from "qComponents/empty-page";
 import styles from "./index.module.less";
 
 type NftData = {

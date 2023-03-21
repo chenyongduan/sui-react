@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { JsonRpcProvider, devnetConnection } from "@mysten/sui.js";
 import { ConnectButton, useWalletKit } from "@mysten/wallet-kit";
-import { fullPriceToSuiPrice } from "../../utils";
+import { fullPriceToSuiPrice } from "qUtils";
 import NftsSection from "./nfts-section";
 import MarketSection from "./market-section";
 import ButtonSection from "./button-section";
