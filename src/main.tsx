@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { WalletKitProvider } from "@mysten/wallet-kit";
 import { ConfigProvider } from "antd";
 import MainPage from "./pages/main-page";
-import "./index.css";
+import "./index.less";
 
 // useEffect(() => {
 //   subscribeEventByNft();
