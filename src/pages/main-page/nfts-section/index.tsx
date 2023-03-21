@@ -60,7 +60,6 @@ function NftsSection() {
           nftObjectList
         );
         setNftList(nftList);
-        console.log(nftList);
       }
     } finally {
       setLoading(false);
@@ -93,6 +92,10 @@ function NftsSection() {
     }
   }, [isConnected, currentAccount]);
 
+  const onRefreshNftsEvent = useCallback(() => {
+    refreshObjects(currentAccount!);
+  }, [currentAccount]);
+
   return (
     <div className={styles.baseView}>
       <Button className={styles.createButton} onClick={onBuyStone}>
@@ -122,6 +125,7 @@ function NftsSection() {
                 type={type}
                 suiProvider={suiProviderRef.current}
                 attributes={attributes.map((data) => data.fields)}
+                onRefreshEvent={onRefreshNftsEvent}
               />
             );
           })}

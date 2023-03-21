@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { JsonRpcProvider, devnetConnection } from "@mysten/sui.js";
 import { useWalletKit } from "@mysten/wallet-kit";
+import { isEmpty } from "underscore";
 import { Spin } from "antd";
 import StoneItem from "../components/stone-item";
 import { STONE_MARKET_SHARE_ID } from "../../../constants";
@@ -36,6 +37,10 @@ function MarketSection() {
       const dynamicObjects = await suiProviderRef.current.getDynamicFields(
         STONE_MARKET_SHARE_ID
       );
+      if (isEmpty(dynamicObjects.data)) {
+        setNftList([]);
+        return;
+      }
       const listIds = dynamicObjects.data.map((data) => data.objectId);
       const list = await suiProviderRef.current.getObjectBatch(listIds);
       const promiseList = listIds.map(async (id) => {
@@ -94,7 +99,7 @@ function MarketSection() {
                 attributes={
                   !!attributes && attributes.map((data) => data.fields)
                 }
-                onRefreshMarkets={onRefreshMarketsEvent}
+                onRefreshEvent={onRefreshMarketsEvent}
               />
             );
           })}

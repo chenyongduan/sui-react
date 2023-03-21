@@ -10,7 +10,6 @@ import {
   STONE_PACKAGE_ID,
   STONE_MARKET_SHARE_ID,
   STONE_TYPE,
-  STONE_MODULE_NAME,
   SUI_COIN_TYPE,
 } from "../../../../constants";
 import styles from "./index.module.less";
@@ -25,7 +24,7 @@ type Props = {
   ownerId?: string;
   attributes: Array<{ name: string; value: string }>;
   suiProvider: JsonRpcProvider;
-  onRefreshMarkets?: () => void;
+  onRefreshEvent?: () => void;
 };
 
 const getShortId = (id: string) => {
@@ -44,7 +43,7 @@ const NftItem: React.FC<Props> = (props) => {
     listId,
     ownerId,
     suiProvider,
-    onRefreshMarkets,
+    onRefreshEvent,
   } = props;
   const { currentAccount, isConnected, signAndExecuteTransaction } =
     useWalletKit();
@@ -125,15 +124,15 @@ const NftItem: React.FC<Props> = (props) => {
         kind: "moveCall",
         data: {
           packageObjectId: STONE_PACKAGE_ID,
-          module: STONE_MODULE_NAME,
+          module: STONE_MARKET_MODULE_NAME,
           function: "purchase_and_take_mul_coins",
-          typeArguments: [],
-          arguments: [STONE_MARKET_SHARE_ID, listId],
+          typeArguments: [STONE_TYPE],
+          arguments: [STONE_MARKET_SHARE_ID, listId, coinIds],
           gasBudget: 10000,
         },
       });
       setTimeout(() => {
-        onRefreshMarkets?.();
+        onRefreshEvent?.();
       }, 4000);
     } catch (e: any) {
       console.log("error=", e);
@@ -142,7 +141,7 @@ const NftItem: React.FC<Props> = (props) => {
         placement: "top",
       });
     }
-  }, [isConnected, listId, onRefreshMarkets]);
+  }, [isConnected, listId, onRefreshEvent]);
 
   const onGetBackClick = useCallback(async () => {
     if (!checkWalletConnect(isConnected) || !listId) return;
@@ -151,15 +150,15 @@ const NftItem: React.FC<Props> = (props) => {
         kind: "moveCall",
         data: {
           packageObjectId: STONE_PACKAGE_ID,
-          module: STONE_MODULE_NAME,
+          module: STONE_MARKET_MODULE_NAME,
           function: "delist_and_take",
-          typeArguments: [],
+          typeArguments: [STONE_TYPE],
           arguments: [STONE_MARKET_SHARE_ID, listId],
           gasBudget: 10000,
         },
       });
       setTimeout(() => {
-        onRefreshMarkets?.();
+        onRefreshEvent?.();
       }, 4000);
     } catch (e: any) {
       console.log("error=", e);
@@ -168,7 +167,7 @@ const NftItem: React.FC<Props> = (props) => {
         placement: "top",
       });
     }
-  }, [isConnected, listId, onRefreshMarkets]);
+  }, [isConnected, listId, onRefreshEvent]);
 
   const isSelf = ownerId === currentAccount;
   return (
