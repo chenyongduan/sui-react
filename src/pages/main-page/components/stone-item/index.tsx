@@ -82,6 +82,9 @@ const NftItem: React.FC<Props> = (props) => {
           gasBudget: 10000,
         },
       });
+      setTimeout(() => {
+        onRefreshEvent?.();
+      }, 4000);
     } catch (e: any) {
       console.log("error=", e);
       notification.error({
@@ -89,7 +92,7 @@ const NftItem: React.FC<Props> = (props) => {
         placement: "top",
       });
     }
-  }, [isConnected, id, priceValue]);
+  }, [isConnected, id, priceValue, onRefreshEvent]);
 
   const onIdClick = useCallback(() => {
     window.open(`https://explorer.sui.io/object/${id}`, "_blank");

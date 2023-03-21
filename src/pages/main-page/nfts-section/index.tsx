@@ -6,6 +6,7 @@ import {
 } from "@mysten/sui.js";
 import { useWalletKit } from "@mysten/wallet-kit";
 import { Button, notification, Spin } from "antd";
+import { isEmpty } from "underscore";
 import StoneItem from "../components/stone-item";
 import {
   STONE_CREATE_METHOD,
@@ -15,6 +16,7 @@ import {
   STONE_TYPE,
 } from "../../../constants";
 import { checkWalletConnect } from "../../../utils";
+import EmptyPage from "../../../components/empty-page";
 import styles from "./index.module.less";
 
 type NftData = {
@@ -96,13 +98,16 @@ function NftsSection() {
     refreshObjects(currentAccount!);
   }, [currentAccount]);
 
+  const hasData = isEmpty(nftList);
+  const showEmpty = hasData && !loading;
+  const showContent = !hasData && !loading;
   return (
     <div className={styles.baseView}>
       <Button className={styles.createButton} onClick={onBuyStone}>
         创建Stone
       </Button>
       {loading && <Spin className={styles.spin} />}
-      {!loading && (
+      {showContent && (
         <div className={styles.contentView}>
           {nftList.map((value) => {
             // @ts-ignore
@@ -131,6 +136,7 @@ function NftsSection() {
           })}
         </div>
       )}
+      {showEmpty && <EmptyPage title="快去创建一个Stone吧" />}
     </div>
   );
 }

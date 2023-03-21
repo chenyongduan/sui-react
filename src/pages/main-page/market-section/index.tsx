@@ -5,6 +5,7 @@ import { isEmpty } from "underscore";
 import { Spin } from "antd";
 import StoneItem from "../components/stone-item";
 import { STONE_MARKET_SHARE_ID } from "../../../constants";
+import EmptyPage from "../../../components/empty-page";
 import styles from "./index.module.less";
 
 type NftData = {
@@ -80,10 +81,13 @@ function MarketSection() {
     refreshObjects(false);
   }, []);
 
+  const hasData = isEmpty(nftList);
+  const showEmpty = hasData && !loading;
+  const showContent = !hasData && !loading;
   return (
     <div className={styles.baseView}>
       {loading && <Spin className={styles.spin} />}
-      {!loading && (
+      {showContent && (
         <div className={styles.contentView}>
           {nftList.map((data) => {
             const { url, id, attributes, price, listId, ownerId } = data;
@@ -105,6 +109,7 @@ function MarketSection() {
           })}
         </div>
       )}
+      {showEmpty && <EmptyPage />}
     </div>
   );
 }
