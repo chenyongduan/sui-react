@@ -1,0 +1,27 @@
+.baseView {
+  z-index: 100;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: amAlert 0.3s forwards;
+}
+
+.stone {
+  width: 600px;
+  height: 600px;
+}
+
+@keyframes amAlert {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+}

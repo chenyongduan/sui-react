@@ -11,6 +11,7 @@ import {
   STONE_TYPE,
   SUI_COIN_TYPE,
 } from "qConstants";
+import ModalStone from "../modal-stone";
 import Stone from "../stone";
 import styles from "./index.module.less";
 
@@ -172,10 +173,14 @@ const NftItem: React.FC<Props> = (props) => {
     }
   }, [isConnected, listId, onRefreshEvent]);
 
+  const onStoneClick = useCallback(() => {
+    ModalStone.show(attributes);
+  }, [attributes]);
+
   const isSelf = ownerId === currentAccount;
   return (
     <div className={styles.baseView}>
-      {!!attributes && <Stone attributes={attributes} />}
+      {!!attributes && <Stone attributes={attributes} onClick={onStoneClick} />}
       {!attributes && <img className={styles.image} src={realImageUrl} />}
       <div className={styles.rightView}>
         {!!name && <p>{name}</p>}
