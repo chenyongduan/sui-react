@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { JsonRpcProvider, devnetConnection } from "@mysten/sui.js";
 import { ConnectButton, useWalletKit } from "@mysten/wallet-kit";
+import { useNavigate } from "react-router-dom";
+import { Button } from "antd";
 import { fullPriceToSuiPrice } from "qUtils";
 import NftsSection from "./nfts-section";
 import MarketSection from "./market-section";
@@ -21,6 +23,7 @@ const SECTION_LIST = [
 const MainPage = () => {
   const { currentAccount, isConnected } = useWalletKit();
   const suiProviderRef = useRef(new JsonRpcProvider(devnetConnection));
+  const navigate = useNavigate();
   const [balance, setBalance] = useState(0);
   const [selectId, setSelectId] = useState(0);
 
@@ -43,11 +46,28 @@ const MainPage = () => {
     setSelectId(index);
   }, []);
 
+  const onGoToThreePage = useCallback(() => {
+    navigate("threePage");
+  }, []);
+
   const SectionComponent = SECTION_LIST[selectId].component;
   return (
     <div className={styles.basePage}>
       <div className={styles.navBar}>
-        <p className={styles.navBarTitle}>Stone</p>
+        <div className={styles.navBarLeftView}>
+          <p className={styles.navBarTitle}>Stone</p>
+          <Button onClick={onGoToThreePage} style={{ marginLeft: 20 }}>
+            ThreePage
+          </Button>
+          <Button
+            onClick={() => {
+              navigate("p2Page");
+            }}
+            style={{ marginLeft: 20 }}
+          >
+            P2Page
+          </Button>
+        </div>
         <div className={styles.navBarInfo}>
           <p>当前账号：</p>
           <ConnectButton />

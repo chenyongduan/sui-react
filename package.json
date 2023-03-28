@@ -11,10 +11,19 @@
   "dependencies": {
     "@mysten/sui.js": "^0.29.1",
     "@mysten/wallet-kit": "^0.3.3",
+    "@react-three/drei": "^9.58.4",
+    "@react-three/fiber": "^8.12.0",
+    "@react-three/p2": "^0.0.6",
+    "@types/three": "^0.149.0",
+    "@use-gesture/react": "^10.2.24",
     "antd": "^5.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "underscore": "^1.13.6"
+    "react-router": "^6.9.0",
+    "react-router-dom": "^6.9.0",
+    "three": "^0.150.1",
+    "underscore": "^1.13.6",
+    "valtio": "^1.10.3"
   },
   "devDependencies": {
     "@types/react": "^18.0.27",
