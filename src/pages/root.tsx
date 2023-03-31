@@ -1,13 +1,8 @@
 import { Button } from "antd";
-import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 const RootPage = () => {
   const navigate = useNavigate();
-
-  const onGoToThreePage = useCallback(() => {
-    navigate("threePage");
-  }, []);
 
   return (
     <div style={{ padding: 40 }}>
@@ -19,9 +14,21 @@ const RootPage = () => {
       >
         NftPage
       </Button>
-
-      <Button onClick={onGoToThreePage} style={{ marginRight: 20 }}>
+      <Button
+        onClick={() => {
+          navigate("threePage");
+        }}
+        style={{ marginRight: 20 }}
+      >
         ThreePage
+      </Button>
+      <Button
+        onClick={() => {
+          navigate("springPage");
+        }}
+        style={{ marginRight: 20 }}
+      >
+        SpringPage
       </Button>
       <Button
         onClick={() => {
