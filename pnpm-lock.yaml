@@ -1,6 +1,8 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@esotericsoftware/spine-core': ^4.2.11
+  '@esotericsoftware/spine-threejs': ^4.2.11
   '@mysten/sui.js': ^0.29.1
   '@mysten/wallet-kit': ^0.3.3
   '@react-spring/three': ^9.7.1
@@ -24,6 +26,8 @@ specifiers:
   vite-react: ^2.4.2
 
 dependencies:
+  '@esotericsoftware/spine-core': 4.2.11
+  '@esotericsoftware/spine-threejs': 4.2.11
   '@mysten/sui.js': 0.29.1
   '@mysten/wallet-kit': 0.3.3_biqbaboplfbrettd7655fr4n2y
   '@react-spring/three': 9.7.1_lfvpzd3m5escehi2gx2mx2fjgy
@@ -1513,6 +1517,18 @@ packages:
     dev: true
     optional: true
 
+  /@esotericsoftware/spine-core/4.2.11:
+    resolution: {integrity: sha512-yyieou3t6XNYNqbWDdGEkVBg2JAAjLrtrNxGIkweNaH38O4p5Z4pPw2r7BKhCkUEW6+TITYkbNslsGGPU3HMAw==}
+    dev: false
+
+  /@esotericsoftware/spine-threejs/4.2.11:
+    resolution: {integrity: sha512-bY1gY94z/TYtT2KwFv7xbUg84ctdIbiw+QuFFy3fZ1InA/2VV+QHo3lJxHpxPzxeeVkeYAhAJXEZiv2vXmP72A==}
+    dependencies:
+      '@esotericsoftware/spine-core': 4.2.11
+      '@types/three': 0.146.0
+      three: 0.146.0
+    dev: false
+
   /@headlessui/react/1.7.13_biqbaboplfbrettd7655fr4n2y:
     resolution: {integrity: sha512-9n+EQKRtD9266xIHXdY5MfiXPDfYwl7zBM7KOx2Ae3Gdgxy8QML1FkCMjq6AsOf0l6N9uvI4HcFtuFlenaldKg==}
     engines: {node: '>=10'}
@@ -2187,6 +2203,12 @@ packages:
 
   /@types/scheduler/0.16.2:
     resolution: {integrity: sha512-hppQEBDmlwhFAXKJX2KnWLYu5yMfi91yazPb2l+lbJiwW+wdo1gNeRA+3RgNSO39WYX2euey41KEwnqesU2Jew==}
+
+  /@types/three/0.146.0:
+    resolution: {integrity: sha512-75AgysUrIvTCB054eQa2pDVFurfeFW8CrMQjpzjt3yHBfuuknoSvvsESd/3EhQxPrz9si3+P0wiDUVsWUlljfA==}
+    dependencies:
+      '@types/webxr': 0.5.1
+    dev: false
 
   /@types/three/0.149.0:
     resolution: {integrity: sha512-fgNBm9LWc65ER/W0cvoXdC0iMy7Ke9e2CONmEr6Jt8sDSY3sw4DgOubZfmdZ747dkPhbQrgRQAWwDEr2S/7IEg==}
@@ -4382,6 +4404,10 @@ packages:
       potpack: 1.0.2
       three: 0.150.1
       zstddec: 0.0.2
+    dev: false
+
+  /three/0.146.0:
+    resolution: {integrity: sha512-1lvNfLezN6OJ9NaFAhfX4sm5e9YCzHtaRgZ1+B4C+Hv6TibRMsuBAM5/wVKzxjpYIlMymvgsHEFrrigEfXnb2A==}
     dev: false
 
   /three/0.150.1:

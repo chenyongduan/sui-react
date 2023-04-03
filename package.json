@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@esotericsoftware/spine-core": "^4.2.11",
+    "@esotericsoftware/spine-threejs": "^4.2.11",
     "@mysten/sui.js": "^0.29.1",
     "@mysten/wallet-kit": "^0.3.3",
     "@react-spring/three": "^9.7.1",

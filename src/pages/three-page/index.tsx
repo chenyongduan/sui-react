@@ -1,4 +1,4 @@
-import { Ref, useRef, useState } from "react";
+import { Ref, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { SpringValue, a, useSpring } from "@react-spring/three";
@@ -8,6 +8,14 @@ import {
   useTexture,
 } from "@react-three/drei";
 import { useGesture } from "@use-gesture/react";
+import {
+  SkeletonBinary,
+  SkeletonJson,
+  AssetManager,
+  AtlasAttachmentLoader,
+  SkeletonMesh,
+  TrackEntry,
+} from "@esotericsoftware/spine-threejs";
 import { mapRange, mapRangeMin } from "./utils";
 
 type MeshType = THREE.Mesh<
@@ -91,6 +99,37 @@ function Path({ pathPoints }: { pathPoints: THREE.Vector3[] }) {
   );
 }
 
+function createSpine() {
+  const skeletonFile = "spineboy.json";
+  const atlasFile = skeletonFile
+    .replace("-pro", "")
+    .replace("-ess", "")
+    .replace(".json", ".atlas");
+  const animation = "idle";
+
+  const assetManager = new AssetManager("boy/");
+  assetManager.loadText(skeletonFile);
+  return new Promise<SkeletonMesh>((resole) => {
+    assetManager.loadTextureAtlas(atlasFile, (success) => {
+      const atlas = assetManager.require(atlasFile);
+      const atlasLoader = new AtlasAttachmentLoader(atlas);
+      let skeletonJson = new SkeletonJson(atlasLoader);
+      skeletonJson.scale = 0.005;
+      const skeletonData = skeletonJson.readSkeletonData(
+        assetManager.require(skeletonFile)
+      );
+      const skeletonMesh = new SkeletonMesh(skeletonData, (parameters) => {
+        parameters.depthTest = true;
+        parameters.depthWrite = true;
+        parameters.alphaTest = 0.001;
+      });
+      skeletonMesh.skeleton.scaleX = -1;
+      skeletonMesh.state.setAnimation(0, animation, true);
+      resole(skeletonMesh);
+    });
+  });
+}
+
 function World() {
   const worldRef = useRef<MeshType>();
   const arrowRef = useRef<MeshType>();
@@ -103,6 +142,8 @@ function World() {
   const setEnemyRef = useRef(false);
   const ARROW_ROTATION_Z = 0;
   const [pathPoints, setPathPoints] = useState<THREE.Vector3[]>([]);
+  const skeletonMeshRef = useRef<SkeletonMesh>();
+  const trackRef = useRef<TrackEntry>();
 
   const [{ rotationZ, arrowRotationZ }, set] = useSpring(() => ({
     rotationZ: 0,
@@ -118,6 +159,9 @@ function World() {
   }));
 
   const bind = useGesture({
+    onClick: () => {
+      // skeletonMeshRef.current?.state.setAnimation(0, "shoot", false);
+    },
     onDrag: ({ down, movement }) => {
       let rotationZ = 0;
       let curArrowRotationZ = ARROW_ROTATION_Z;
@@ -173,24 +217,30 @@ function World() {
     },
   });
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (arrowRef.current) {
       arrowBox.setFromObject(arrowRef.current);
     }
-    if (enemyRef.current && !setEnemyRef.current) {
-      enemyBoxRef.current.setFromObject(enemyRef.current);
+    if (skeletonMeshRef.current && !setEnemyRef.current) {
+      enemyBoxRef.current.setFromObject(skeletonMeshRef.current);
     }
+    // console.log(trackRef.current?.isComplete());
     if (
       checkCollisionRef.current &&
       enemyBoxRef.current.intersectsBox(arrowBox)
     ) {
       console.log("=checkCollision=");
+      trackRef.current = skeletonMeshRef.current?.state.setAnimation(
+        0,
+        "hit",
+        false
+      );
       checkCollisionRef.current = false;
       if (arrowRef.current) {
         const newArrow = arrowRef.current.clone(true);
-        arrowRef.current.position.set(-2, 1, 0);
-        enemyRef.current?.add(arrowRef.current);
-        arrowListRef.current.push(arrowRef.current);
+        // arrowRef.current.position.set(-2, 1, 0);
+        // enemyRef.current?.add(arrowRef.current);
+        // arrowListRef.current.push(arrowRef.current);
 
         newArrow?.rotation.set(0, 0, 0);
         set.stop();
@@ -209,6 +259,9 @@ function World() {
       arrowRef.current?.rotation.set(0, 0, arrowRotationZ.get());
       arrowRef.current?.position.set(arrowX.get(), arrowY.get(), 0);
     }
+    skeletonMeshRef.current?.update(delta);
+
+    // console.log(skeletonMeshRef.current?.skeleton.data);
   });
 
   const refreshPathPoints = () => {
@@ -221,9 +274,40 @@ function World() {
     setPathPoints(points);
   };
 
+  useEffect(() => {
+    initSpine();
+  }, []);
+
+  async function initSpine() {
+    const skeletonMesh = await createSpine();
+    skeletonMeshRef.current = skeletonMesh;
+    // const geometry = new THREE.BoxGeometry(5, 5, 0);
+    // const material = new THREE.MeshBasicMaterial({
+    //   color: 0xff0000,
+    // });
+    // const mesh = new THREE.Mesh(geometry, material);
+    // mesh.add(skeletonMesh);
+    // @ts-ignore
+    skeletonMesh.state.addListener({
+      complete: (e: TrackEntry) => {
+        console.log("complete=", e.animation?.name);
+        const { name } = e.animation || {};
+        if (name === "hit") {
+          trackRef.current = skeletonMeshRef.current?.state.setAnimation(
+            0,
+            "idle",
+            true
+          );
+        }
+      },
+    });
+    worldRef.current?.add(skeletonMesh);
+  }
+
   return (
     // @ts-ignore
     <a.mesh ref={worldRef} {...bind()}>
+      {/* <OrbitControls></OrbitControls> */}
       <Enemy onRef={enemyRef} />
       <Player onRef={playerRef} rotationZ={rotationZ} />
       <Path pathPoints={pathPoints} />
