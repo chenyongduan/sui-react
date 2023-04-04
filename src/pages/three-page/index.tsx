@@ -9,7 +9,6 @@ import {
 } from "@react-three/drei";
 import { useGesture } from "@use-gesture/react";
 import {
-  SkeletonBinary,
   SkeletonJson,
   AssetManager,
   AtlasAttachmentLoader,
@@ -41,11 +40,11 @@ function Enemy({ onRef }: { onRef: Ref<MeshType | undefined> }) {
     <mesh
       // @ts-ignore
       ref={onRef}
-      position={[4, 1, 0]}
+      position={[4, 2, 0]}
       // geometry={nodes.Body.geometry}
       // material={materials["材质"]}
     >
-      <boxGeometry args={[4, 4, 0.001]} />
+      <boxGeometry args={[6, 6, 0.001]} />
       <meshBasicMaterial map={monsterMap} transparent depthWrite={false} />
     </mesh>
   );
@@ -77,16 +76,21 @@ function PathDot({
 }) {
   return (
     <mesh position={position}>
-      <circleGeometry args={[0.07]} />
+      <circleGeometry args={[0.06]} />
       <meshBasicMaterial color="white" opacity={opacity} transparent />
     </mesh>
   );
 }
 
 function Path({ pathPoints }: { pathPoints: THREE.Vector3[] }) {
+  let curPathPoints = pathPoints;
+  const lastPoint = pathPoints[pathPoints.length - 1];
+  if (!!lastPoint && lastPoint.x < 6) {
+    curPathPoints = pathPoints.slice(0, 10);
+  }
   return (
     <mesh>
-      {pathPoints.map((point, index) => {
+      {curPathPoints.map((point, index) => {
         return (
           <PathDot
             key={index}
@@ -152,9 +156,9 @@ function World() {
 
   const [{ arrowX, arrowY }, arrowApi] = useSpring(() => ({
     arrowX: -5,
-    arrowY: 1,
+    arrowY: 1.5,
     config: {
-      duration: 3000,
+      duration: 1500,
     },
   }));
 
@@ -177,7 +181,7 @@ function World() {
         }
         rotationZ = Math.PI / (7 + playerRotation);
         curArrowRotationZ = -Math.PI / (3 + arrowRotation);
-        refreshPathPoints();
+        refreshPathPoints(offsetX);
         set({
           arrowRotationZ: curArrowRotationZ,
         });
@@ -190,12 +194,13 @@ function World() {
             return { arrowX: value.x, arrowY: value.y };
           }),
           config: {
-            duration: 100,
+            duration: 70,
             mass: 10,
             tension: 200,
           },
           onRest: () => {
             set.stop();
+            arrowApi({ arrowX: -5, arrowY: 1.5, config: { duration: 10 } });
           },
         });
         set({
@@ -221,26 +226,31 @@ function World() {
     if (arrowRef.current) {
       arrowBox.setFromObject(arrowRef.current);
     }
-    if (skeletonMeshRef.current && !setEnemyRef.current) {
-      enemyBoxRef.current.setFromObject(skeletonMeshRef.current);
+    if (enemyRef.current && !setEnemyRef.current) {
+      enemyBoxRef.current.setFromObject(enemyRef.current);
     }
-    // console.log(trackRef.current?.isComplete());
     if (
       checkCollisionRef.current &&
       enemyBoxRef.current.intersectsBox(arrowBox)
     ) {
       console.log("=checkCollision=");
-      trackRef.current = skeletonMeshRef.current?.state.setAnimation(
-        0,
-        "hit",
-        false
-      );
       checkCollisionRef.current = false;
+      // trackRef.current = skeletonMeshRef.current?.state.setAnimation(
+      //   0,
+      //   "hit",
+      //   false
+      // );
       if (arrowRef.current) {
         const newArrow = arrowRef.current.clone(true);
-        // arrowRef.current.position.set(-2, 1, 0);
-        // enemyRef.current?.add(arrowRef.current);
-        // arrowListRef.current.push(arrowRef.current);
+        const enemyX = enemyRef.current?.position.x || 4;
+        const enemyY = enemyRef.current?.position.y || 1;
+        arrowRef.current.position.set(
+          arrowRef.current.position.x - enemyX,
+          arrowRef.current.position.y - enemyY,
+          0
+        );
+        enemyRef.current?.add(arrowRef.current);
+        arrowListRef.current.push(arrowRef.current);
 
         newArrow?.rotation.set(0, 0, 0);
         set.stop();
@@ -252,7 +262,7 @@ function World() {
 
         newArrow.name = "newArrow";
         arrowRef.current = newArrow;
-        arrowApi({ arrowX: -5, arrowY: 1, config: { duration: 10 } });
+        arrowApi({ arrowX: -5, arrowY: 1.5, config: { duration: 10 } });
         worldRef.current?.add(arrowRef.current);
       }
     } else {
@@ -260,22 +270,41 @@ function World() {
       arrowRef.current?.position.set(arrowX.get(), arrowY.get(), 0);
     }
     skeletonMeshRef.current?.update(delta);
-
-    // console.log(skeletonMeshRef.current?.skeleton.data);
   });
 
-  const refreshPathPoints = () => {
+  const refreshPathPoints = (distance: number) => {
+    const z = 0.1;
+    const startX = -4;
+    let endX = 6;
+    const startY = 2;
+    let endY = startY;
+    let middleY = startY;
+    const offsetX = 60;
+    const maxOffsetX = 120;
+    if (distance >= 0) {
+      endY = startY - mapRangeMin(distance, 0, offsetX, 0, 6);
+      middleY = startY - mapRangeMin(distance, 0, offsetX, 0, 1);
+    } else if (distance < -offsetX) {
+      middleY = startY + 2 + mapRangeMin(-distance, offsetX, maxOffsetX, 4, 6);
+      endX = endX - mapRangeMin(-distance, offsetX, maxOffsetX, 0, 4);
+    } else {
+      endY = startY + mapRangeMin(-distance, 0, offsetX, 0, 6);
+      middleY = startY + mapRangeMin(-distance, 0, offsetX, 0, 6);
+      endX = endX + mapRangeMin(-distance, 0, offsetX, 0, 2);
+    }
+    const middleX = (startX + endX) / 2;
+    // console.log(distance, endY, middleY, endX);
     const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-4, 2, 0.1),
-      new THREE.Vector3(-1, 3, 0.1),
-      new THREE.Vector3(2, 2, 0.1),
+      new THREE.Vector3(startX, startY, z),
+      new THREE.Vector3(middleX, middleY, z),
+      new THREE.Vector3(endX, endY, z),
     ]);
-    const points = curve.getPoints(14);
+    const points = curve.getPoints(18);
     setPathPoints(points);
   };
 
   useEffect(() => {
-    initSpine();
+    // initSpine();
   }, []);
 
   async function initSpine() {
@@ -301,7 +330,7 @@ function World() {
         }
       },
     });
-    worldRef.current?.add(skeletonMesh);
+    worldRef.current?.add(skeletonMesh as unknown as THREE.Object3D<Event>);
   }
 
   return (
