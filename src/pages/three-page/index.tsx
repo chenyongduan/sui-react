@@ -104,31 +104,31 @@ function Path({ pathPoints }: { pathPoints: THREE.Vector3[] }) {
 }
 
 function createSpine() {
-  const skeletonFile = "spineboy.json";
+  const skeletonFile = "boy/spineboy.json";
   const atlasFile = skeletonFile
     .replace("-pro", "")
     .replace("-ess", "")
     .replace(".json", ".atlas");
-  const animation = "idle";
 
-  const assetManager = new AssetManager("boy/");
+  const assetManager = new AssetManager("");
   assetManager.loadText(skeletonFile);
   return new Promise<SkeletonMesh>((resole) => {
-    assetManager.loadTextureAtlas(atlasFile, (success) => {
-      const atlas = assetManager.require(atlasFile);
-      const atlasLoader = new AtlasAttachmentLoader(atlas);
-      let skeletonJson = new SkeletonJson(atlasLoader);
+    assetManager.loadTextureAtlas(atlasFile, () => {
+      const atlasFileHandle = assetManager.require(atlasFile);
+      const atlasLoader = new AtlasAttachmentLoader(atlasFileHandle);
+      const skeletonJson = new SkeletonJson(atlasLoader);
       skeletonJson.scale = 0.005;
-      const skeletonData = skeletonJson.readSkeletonData(
-        assetManager.require(skeletonFile)
-      );
+      const skeletonFileHandle = assetManager.require(skeletonFile);
+      const skeletonData = skeletonJson.readSkeletonData(skeletonFileHandle);
+
       const skeletonMesh = new SkeletonMesh(skeletonData, (parameters) => {
         parameters.depthTest = true;
         parameters.depthWrite = true;
         parameters.alphaTest = 0.001;
       });
+      console.log(skeletonMesh);
       skeletonMesh.skeleton.scaleX = -1;
-      skeletonMesh.state.setAnimation(0, animation, true);
+      skeletonMesh.state.setAnimation(0, "idle", true);
       resole(skeletonMesh);
     });
   });
@@ -147,6 +147,7 @@ function World() {
   const ARROW_ROTATION_Z = 0;
   const [pathPoints, setPathPoints] = useState<THREE.Vector3[]>([]);
   const skeletonMeshRef = useRef<SkeletonMesh>();
+  const boneMeshRef = useRef<MeshType>();
   const trackRef = useRef<TrackEntry>();
 
   const [{ rotationZ, arrowRotationZ }, set] = useSpring(() => ({
@@ -235,21 +236,16 @@ function World() {
     ) {
       console.log("=checkCollision=");
       checkCollisionRef.current = false;
-      // trackRef.current = skeletonMeshRef.current?.state.setAnimation(
-      //   0,
-      //   "hit",
-      //   false
-      // );
       if (arrowRef.current) {
         const newArrow = arrowRef.current.clone(true);
-        const enemyX = enemyRef.current?.position.x || 4;
-        const enemyY = enemyRef.current?.position.y || 1;
-        arrowRef.current.position.set(
-          arrowRef.current.position.x - enemyX,
-          arrowRef.current.position.y - enemyY,
-          0
-        );
-        enemyRef.current?.add(arrowRef.current);
+        // const enemyX = enemyRef.current?.position.x || 4;
+        // const enemyY = enemyRef.current?.position.y || 1;
+        // arrowRef.current.position.set(
+        //   arrowRef.current.position.x - enemyX,
+        //   arrowRef.current.position.y - enemyY,
+        //   0
+        // );
+        // enemyRef.current?.add(arrowRef.current);
         arrowListRef.current.push(arrowRef.current);
 
         newArrow?.rotation.set(0, 0, 0);
@@ -270,6 +266,18 @@ function World() {
       arrowRef.current?.position.set(arrowX.get(), arrowY.get(), 0);
     }
     skeletonMeshRef.current?.update(delta);
+
+    if (skeletonMeshRef.current) {
+      const bone = skeletonMeshRef.current.skeleton.findBone("gun");
+      boneMeshRef.current?.position.setX(bone?.worldX || 0);
+      boneMeshRef.current?.position.setY(bone?.worldY || 0);
+
+      arrowListRef.current.map((arrowMesh: any) => {
+        arrowMesh.position.setZ(1);
+        arrowMesh.position.setX(bone?.worldX || 0);
+        arrowMesh.position.setY(bone?.worldY || 0);
+      });
+    }
   });
 
   const refreshPathPoints = (distance: number) => {
@@ -304,18 +312,48 @@ function World() {
   };
 
   useEffect(() => {
-    // initSpine();
+    if (!skeletonMeshRef.current) {
+      initSpine();
+    }
   }, []);
 
   async function initSpine() {
     const skeletonMesh = await createSpine();
     skeletonMeshRef.current = skeletonMesh;
-    // const geometry = new THREE.BoxGeometry(5, 5, 0);
-    // const material = new THREE.MeshBasicMaterial({
-    //   color: 0xff0000,
-    // });
-    // const mesh = new THREE.Mesh(geometry, material);
-    // mesh.add(skeletonMesh);
+
+    const bone = skeletonMesh.skeleton.findBone("gun");
+    const slot = skeletonMesh.skeleton.findSlot("gun");
+
+    console.log(skeletonMesh.skeleton.slots);
+    console.log(bone);
+
+    const geometry = new THREE.BoxGeometry(0.2, 0.2, 0);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.x = bone?.worldX || 0;
+    mesh.position.y = bone?.worldY || 0;
+    mesh.position.z = 0.5;
+    boneMeshRef.current = mesh;
+    skeletonMesh.add(mesh);
+
+    setTimeout(() => {
+      console.log(skeletonMesh.skeleton?.getRootBone()?.worldY);
+      const { x, y, width, height } = skeletonMesh.skeleton?.getBoundsRect();
+      const geometry1 = new THREE.BoxGeometry(width, height, 0);
+      const material1 = new THREE.MeshBasicMaterial({
+        color: 0x00ff00,
+      });
+      const mesh1 = new THREE.Mesh(geometry1, material1);
+      mesh1.position.x = x;
+      mesh1.position.y = y;
+      mesh1.position.z = 0;
+      worldRef.current?.add(mesh1);
+    });
+
+    console.log(skeletonMesh.skeleton);
+
     // @ts-ignore
     skeletonMesh.state.addListener({
       complete: (e: TrackEntry) => {
@@ -328,6 +366,9 @@ function World() {
             true
           );
         }
+      },
+      event: (entry, event) => {
+        // console.log(entry, event);
       },
     });
     worldRef.current?.add(skeletonMesh as unknown as THREE.Object3D<Event>);
