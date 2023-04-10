@@ -1,21 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
+import { SkeletonMesh } from "@esotericsoftware/spine-threejs";
 import * as THREE from "three";
 import { a, useSpring } from "@react-spring/three";
 import { useGesture } from "@use-gesture/react";
-import { SkeletonMesh, TrackEntry } from "@esotericsoftware/spine-threejs";
 import { mapRangeMin } from "./utils";
-import { createSpine } from "./spine";
 import { CurvePath } from "./curve-path";
 import { MeshType } from "./style";
 import { Enemy } from "./enemy";
 import { Player } from "./player";
 import { Weapon } from "./weapon";
+import { createSpineBounds } from "./spine";
 
 export function GameWorld() {
   const worldRef = useRef<MeshType>();
-  const arrowRef = useRef<MeshType>();
-  const enemyRef = useRef<MeshType>();
+  const weaponRef = useRef<MeshType>();
+  const enemyRef = useRef<SkeletonMesh>();
   const playerRef = useRef<MeshType>();
   const checkCollisionRef = useRef(true);
   const arrowBox = new THREE.Box3();
@@ -24,9 +24,6 @@ export function GameWorld() {
   const setEnemyRef = useRef(false);
   const ARROW_ROTATION_Z = 0;
   const [pathPoints, setPathPoints] = useState<THREE.Vector3[]>([]);
-  const skeletonMeshRef = useRef<SkeletonMesh>();
-  const boneMeshRef = useRef<MeshType>();
-  const trackRef = useRef<TrackEntry>();
 
   const [{ rotationZ, arrowRotationZ }, set] = useSpring(() => ({
     rotationZ: 0,
@@ -101,32 +98,33 @@ export function GameWorld() {
     },
   });
 
-  useFrame((_, delta) => {
-    if (arrowRef.current) {
-      arrowBox.setFromObject(arrowRef.current);
+  useFrame(() => {
+    if (weaponRef.current) {
+      arrowBox.setFromObject(weaponRef.current);
     }
     if (enemyRef.current && !setEnemyRef.current) {
       enemyBoxRef.current.setFromObject(enemyRef.current);
     }
+
     if (
       checkCollisionRef.current &&
       enemyBoxRef.current.intersectsBox(arrowBox)
     ) {
       console.log("=checkCollision=");
       checkCollisionRef.current = false;
-      if (arrowRef.current) {
-        const newArrow = arrowRef.current.clone(true);
+      if (weaponRef.current) {
+        const newWeapon = weaponRef.current.clone(true);
         // const enemyX = enemyRef.current?.position.x || 4;
         // const enemyY = enemyRef.current?.position.y || 1;
-        // arrowRef.current.position.set(
-        //   arrowRef.current.position.x - enemyX,
-        //   arrowRef.current.position.y - enemyY,
+        // weaponRef.current.position.set(
+        //   weaponRef.current.position.x - enemyX,
+        //   weaponRef.current.position.y - enemyY,
         //   0
         // );
-        // enemyRef.current?.add(arrowRef.current);
-        arrowListRef.current.push(arrowRef.current);
+        enemyRef.current?.add(weaponRef.current);
+        arrowListRef.current.push(weaponRef.current);
 
-        newArrow?.rotation.set(0, 0, 0);
+        newWeapon?.rotation.set(0, 0, 0);
         set.stop();
         arrowApi.stop();
         if (arrowListRef.current.length > 5) {
@@ -134,22 +132,19 @@ export function GameWorld() {
           cube.removeFromParent();
         }
 
-        newArrow.name = "newArrow";
-        arrowRef.current = newArrow;
+        newWeapon.name = "newWeapon";
+        weaponRef.current = newWeapon;
         arrowApi({ arrowX: -5, arrowY: 1.5, config: { duration: 10 } });
-        worldRef.current?.add(arrowRef.current);
+        worldRef.current?.add(weaponRef.current);
       }
     } else {
-      arrowRef.current?.rotation.set(0, 0, arrowRotationZ.get());
-      arrowRef.current?.position.set(arrowX.get(), arrowY.get(), 0);
+      weaponRef.current?.rotation.set(0, 0, arrowRotationZ.get());
+      weaponRef.current?.position.set(arrowX.get(), arrowY.get(), 0);
     }
-    skeletonMeshRef.current?.update(delta);
 
-    if (skeletonMeshRef.current) {
-      const bone = skeletonMeshRef.current.skeleton.findBone("gun");
-      boneMeshRef.current?.position.setX(bone?.worldX || 0);
-      boneMeshRef.current?.position.setY(bone?.worldY || 0);
-
+    if (enemyRef.current) {
+      const bone = enemyRef.current.skeleton.findBone("head");
+      // console.log(bone?.worldX);
       arrowListRef.current.map((arrowMesh: any) => {
         arrowMesh.position.setZ(1);
         arrowMesh.position.setX(bone?.worldX || 0);
@@ -189,78 +184,25 @@ export function GameWorld() {
     setPathPoints(points);
   };
 
-  useEffect(() => {
-    if (!skeletonMeshRef.current) {
-      initSpine();
-    }
-  }, []);
-
-  async function initSpine() {
-    const skeletonMesh = await createSpine("man/stretchyman.json", 0.005);
-    skeletonMesh.skeleton.scaleX = -1;
-    // skeletonMesh.state.setAnimation(0, "sneak", true);
-    skeletonMeshRef.current = skeletonMesh;
-
-    const bone = skeletonMesh.skeleton.findBone("gun");
-    const slot = skeletonMesh.skeleton.findSlot("gun");
-
-    console.log(skeletonMesh.skeleton.slots);
-    console.log(bone);
-
-    const geometry = new THREE.BoxGeometry(0.2, 0.2, 0);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.x = bone?.worldX || 0;
-    mesh.position.y = bone?.worldY || 0;
-    mesh.position.z = 0.5;
-    boneMeshRef.current = mesh;
-    //@ts-ignore
-    skeletonMesh.add(mesh);
-
-    setTimeout(() => {
-      console.log(skeletonMesh.skeleton?.getRootBone()?.worldY);
-      const { x, y, width, height } = skeletonMesh.skeleton?.getBoundsRect();
-      const geometry1 = new THREE.BoxGeometry(width, height, 0);
-      const material1 = new THREE.MeshBasicMaterial({
-        color: 0x00ff00,
-      });
-      const mesh1 = new THREE.Mesh(geometry1, material1);
-      mesh1.position.x = x;
-      mesh1.position.y = y;
-      mesh1.position.z = 0;
-      worldRef.current?.add(mesh1);
-    }, 100);
-
+  const onEnemyLoadEnd = useCallback((skeletonMesh: SkeletonMesh) => {
+    if (!skeletonMesh) return;
+    enemyRef.current = skeletonMesh;
     // @ts-ignore
-    skeletonMesh.state.addListener({
-      complete: (e: TrackEntry) => {
-        console.log("complete=", e.animation?.name);
-        const { name } = e.animation || {};
-        if (name === "hit") {
-          trackRef.current = skeletonMeshRef.current?.state.setAnimation(
-            0,
-            "idle",
-            true
-          );
-        }
-      },
-      event: (entry, event) => {
-        // console.log(entry, event);
-      },
-    });
-    worldRef.current?.add(skeletonMesh as unknown as THREE.Object3D<Event>);
-  }
+    worldRef.current?.add(skeletonMesh);
+  }, []);
 
   return (
     // @ts-ignore
     <a.mesh ref={worldRef} {...bind()}>
       {/* <OrbitControls></OrbitControls> */}
-      <Enemy onRef={enemyRef} />
+      <Enemy onLoadEnd={onEnemyLoadEnd} />
       <Player onRef={playerRef} rotationZ={rotationZ} />
       <CurvePath pathPoints={pathPoints} />
-      <Weapon onRef={arrowRef} />
+      <Weapon onRef={weaponRef} />
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[0.1, 0.1, 0]} />
+        <meshBasicMaterial color="red" />
+      </mesh>
     </a.mesh>
   );
 }

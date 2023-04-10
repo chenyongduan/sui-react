@@ -4,6 +4,7 @@ import {
   SkeletonJson,
   SkeletonMesh,
 } from "@esotericsoftware/spine-threejs";
+import * as THREE from "three";
 
 export function createSpine(skeletonFile: string, scale: number = 0.1) {
   const atlasFile = skeletonFile
@@ -30,4 +31,19 @@ export function createSpine(skeletonFile: string, scale: number = 0.1) {
       resole(skeletonMesh);
     });
   });
+}
+
+export function createSpineBounds(skeletonMesh: SkeletonMesh) {
+  if (!skeletonMesh) return null;
+  const { x, y, width, height } = skeletonMesh.skeleton.getBoundsRect();
+  const geometry = new THREE.BoxGeometry(width, height, 0);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x00ff00,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.x = x;
+  mesh.position.y = y;
+  mesh.position.z = 0;
+  skeletonMesh.add(mesh);
+  return mesh;
 }
