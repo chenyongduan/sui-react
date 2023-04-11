@@ -8,8 +8,12 @@ export function Weapon({ onRef }: { onRef: Ref<MeshType | undefined> }) {
   return (
     // @ts-ignore
     <a.mesh ref={onRef}>
-      <boxGeometry args={[1, 1, 0.001]} />
+      <boxGeometry args={[0.8, 0.8, 0.001]} />
       <meshBasicMaterial map={spearMap} transparent depthWrite={false} />
+      <mesh position={[0, 0, 0.001]}>
+        <boxGeometry args={[0.1, 0.1, 0]} />
+        <meshBasicMaterial color="red" />
+      </mesh>
     </a.mesh>
   );
 }

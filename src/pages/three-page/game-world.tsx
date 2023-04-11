@@ -1,6 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
-import { SkeletonMesh } from "@esotericsoftware/spine-threejs";
+import {
+  BoundingBoxAttachment,
+  SkeletonMesh,
+} from "@esotericsoftware/spine-threejs";
 import * as THREE from "three";
 import { a, useSpring } from "@react-spring/three";
 import { useGesture } from "@use-gesture/react";
@@ -10,7 +13,7 @@ import { MeshType } from "./style";
 import { Enemy } from "./enemy";
 import { Player } from "./player";
 import { Weapon } from "./weapon";
-import { createSpineBounds } from "./spine";
+import { OrbitControls } from "@react-three/drei";
 
 export function GameWorld() {
   const worldRef = useRef<MeshType>();
@@ -102,9 +105,9 @@ export function GameWorld() {
     if (weaponRef.current) {
       arrowBox.setFromObject(weaponRef.current);
     }
-    if (enemyRef.current && !setEnemyRef.current) {
-      enemyBoxRef.current.setFromObject(enemyRef.current);
-    }
+    // if (enemyRef.current && !setEnemyRef.current) {
+    // enemyBoxRef.current.setFromObject(enemyRef.current);
+    // }
 
     if (
       checkCollisionRef.current &&
@@ -114,22 +117,23 @@ export function GameWorld() {
       checkCollisionRef.current = false;
       if (weaponRef.current) {
         const newWeapon = weaponRef.current.clone(true);
-        // const enemyX = enemyRef.current?.position.x || 4;
-        // const enemyY = enemyRef.current?.position.y || 1;
-        // weaponRef.current.position.set(
-        //   weaponRef.current.position.x - enemyX,
-        //   weaponRef.current.position.y - enemyY,
-        //   0
-        // );
+        const enemyX = enemyRef.current?.position.x || 5;
+        const enemyY = enemyRef.current?.position.y || -1;
         enemyRef.current?.add(weaponRef.current);
-        arrowListRef.current.push(weaponRef.current);
+
+        const head = enemyRef.current?.skeleton.findBone("head");
+        arrowListRef.current.push({
+          weapon: weaponRef.current,
+          x: weaponRef.current.position.x - enemyX - (head?.worldX || 0),
+          y: weaponRef.current.position.y - enemyY - (head?.worldY || 0),
+        });
 
         newWeapon?.rotation.set(0, 0, 0);
         set.stop();
         arrowApi.stop();
-        if (arrowListRef.current.length > 5) {
+        if (arrowListRef.current.length > 3) {
           const cube = arrowListRef.current.shift();
-          cube.removeFromParent();
+          cube.weapon.removeFromParent();
         }
 
         newWeapon.name = "newWeapon";
@@ -143,13 +147,37 @@ export function GameWorld() {
     }
 
     if (enemyRef.current) {
-      const bone = enemyRef.current.skeleton.findBone("head");
-      // console.log(bone?.worldX);
-      arrowListRef.current.map((arrowMesh: any) => {
-        arrowMesh.position.setZ(1);
-        arrowMesh.position.setX(bone?.worldX || 0);
-        arrowMesh.position.setY(bone?.worldY || 0);
+      const head = enemyRef.current.skeleton.findBone("head");
+      arrowListRef.current.map((data: any) => {
+        const { weapon, x, y } = data;
+        weapon.position.set(x + head?.worldX, y + head?.worldY, 1.2);
       });
+
+      const slot = enemyRef.current.skeleton.findSlot("head");
+      const attachment = enemyRef.current.skeleton.getAttachmentByName(
+        "head",
+        "head"
+      ) as BoundingBoxAttachment;
+      let arr: number[] = [];
+      attachment.computeWorldVertices(
+        slot!,
+        0,
+        attachment.worldVerticesLength,
+        arr,
+        0,
+        2
+      );
+      const points = [];
+      for (let i = 0; i < arr.length; i += 2) {
+        points.push(
+          new THREE.Vector3(
+            arr[i] + enemyRef.current?.position.x,
+            arr[i + 1] + enemyRef.current?.position.y,
+            0
+          )
+        );
+      }
+      enemyBoxRef.current.setFromPoints(points);
     }
   });
 
@@ -199,7 +227,7 @@ export function GameWorld() {
       <Player onRef={playerRef} rotationZ={rotationZ} />
       <CurvePath pathPoints={pathPoints} />
       <Weapon onRef={weaponRef} />
-      <mesh position={[0, 0, 0]}>
+      <mesh position={[0, 0, 0.01]}>
         <boxGeometry args={[0.1, 0.1, 0]} />
         <meshBasicMaterial color="red" />
       </mesh>
