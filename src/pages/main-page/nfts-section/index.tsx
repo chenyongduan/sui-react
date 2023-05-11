@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   JsonRpcProvider,
   devnetConnection,
-  GetObjectDataResponse,
+  SuiObjectResponse,
+  TransactionBlock,
 } from "@mysten/sui.js";
 import { useWalletKit } from "@mysten/wallet-kit";
 import { Button, notification, Spin } from "antd";
@@ -33,34 +34,41 @@ type NftData = {
 };
 
 function NftsSection() {
-  const { currentAccount, isConnected, signAndExecuteTransaction } =
+  const { currentAccount, isConnected, signAndExecuteTransactionBlock } =
     useWalletKit();
   const suiProviderRef = useRef(new JsonRpcProvider(devnetConnection));
-  const [nftList, setNftList] = useState<GetObjectDataResponse[]>([]);
+  const [nftList, setNftList] = useState<SuiObjectResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (currentAccount) {
-      refreshObjects(currentAccount, true);
+      refreshObjects(currentAccount.address, true);
     }
   }, [currentAccount]);
 
   const refreshObjects = async (addressId: string, showLoading?: boolean) => {
     try {
       if (showLoading) setLoading(true);
-      const objects = await suiProviderRef.current.getObjectsOwnedByAddress(
-        addressId
-      );
+      const objects = await suiProviderRef.current.getOwnedObjects({
+        owner: addressId,
+        options: {
+          showType: true,
+        },
+      });
       const nftObjectList: string[] = [];
-      objects.map((data) => {
-        if (data.type.match(STONE_TYPE)) {
-          nftObjectList.push(data.objectId);
+      objects.data.map((data) => {
+        const type = data.data?.type || "";
+        if (type.match(STONE_TYPE)) {
+          nftObjectList.push(data.data?.objectId!);
         }
       });
       if (nftObjectList) {
-        const nftList = await suiProviderRef.current.getObjectBatch(
-          nftObjectList
-        );
+        const nftList = await suiProviderRef.current.multiGetObjects({
+          ids: nftObjectList,
+          options: {
+            showContent: true,
+          },
+        });
         setNftList(nftList);
       }
     } finally {
@@ -71,20 +79,15 @@ function NftsSection() {
   const onBuyStone = useCallback(async () => {
     if (!checkWalletConnect(isConnected)) return;
     try {
-      await signAndExecuteTransaction({
-        kind: "moveCall",
-        data: {
-          packageObjectId: STONE_PACKAGE_ID,
-          module: STONE_MODULE_NAME,
-          function: STONE_CREATE_METHOD,
-          typeArguments: [],
-          arguments: [STONE_REGISTER_SHARE_ID],
-          gasBudget: 10000,
-        },
+      const tx = new TransactionBlock();
+      tx.moveCall({
+        target: `${STONE_PACKAGE_ID}::${STONE_MODULE_NAME}::${STONE_CREATE_METHOD}`,
+        arguments: [tx.pure(STONE_REGISTER_SHARE_ID)],
       });
+      await signAndExecuteTransactionBlock({ transactionBlock: tx });
       setTimeout(() => {
-        refreshObjects(currentAccount!);
-      }, 4000);
+        refreshObjects(currentAccount?.address!);
+      }, 2000);
     } catch (e: any) {
       console.log("error=", e);
       notification.error({
@@ -95,7 +98,7 @@ function NftsSection() {
   }, [isConnected, currentAccount]);
 
   const onRefreshNftsEvent = useCallback(() => {
-    refreshObjects(currentAccount!);
+    refreshObjects(currentAccount?.address!);
   }, [currentAccount]);
 
   const hasData = isEmpty(nftList);
@@ -110,8 +113,6 @@ function NftsSection() {
       {showContent && (
         <div className={styles.contentView}>
           {nftList.map((value) => {
-            // @ts-ignore
-            const { data } = value.details;
             const {
               type,
               fields: {
@@ -120,7 +121,7 @@ function NftsSection() {
                 id: { id },
                 attributes,
               },
-            } = data as unknown as NftData;
+            } = value.data?.content as unknown as NftData;
             return (
               <StoneItem
                 key={id}

@@ -1,4 +1,5 @@
-export const STONE_PACKAGE_ID = "0x8cd08a3fab69186d097768625f006d2a6b979d27";
+export const STONE_PACKAGE_ID =
+  "0xa223383657b8ed6ccaf2c36cafd26df5fa495267e430b47b79df752a99d7e31a";
 
 export const STONE_MODULE_NAME = "stone";
 
@@ -9,10 +10,10 @@ export const STONE_MARKET_MODULE_NAME = "stone_market";
 export const STONE_MARKET_LIST_METHOD = "list";
 
 export const STONE_REGISTER_SHARE_ID =
-  "0xa51935386f92b2df20cb7762be7eac2130a4ca83";
+  "0x98a6d31d15baeb1d5d08d556cf45cbe125dd385b2dc68fd87b36a3be87abf8d7";
 
 export const STONE_MARKET_SHARE_ID =
-  "0x5b78c0e5c5fa9824249ff471077d5681a8be7f63";
+  "0x4fff48062c9395e84c72c134d4fff4bc74ea629527867ec12e6f008e0afb853c";
 
 export const STONE_TYPE = `${STONE_PACKAGE_ID}::stone::Stone`;
 

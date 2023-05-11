@@ -22,6 +22,7 @@ const SECTION_LIST = [
 
 const MainPage = () => {
   const { currentAccount, isConnected } = useWalletKit();
+  const data = useWalletKit();
   const suiProviderRef = useRef(new JsonRpcProvider(devnetConnection));
   const navigate = useNavigate();
   const [balance, setBalance] = useState(0);
@@ -29,7 +30,7 @@ const MainPage = () => {
 
   useEffect(() => {
     if (currentAccount) {
-      refreshBalance(currentAccount);
+      refreshBalance(currentAccount.address);
     } else {
       setBalance(0);
     }
@@ -37,8 +38,10 @@ const MainPage = () => {
 
   const refreshBalance = async (addressId: string) => {
     try {
-      const balance = await suiProviderRef.current.getBalance(addressId);
-      setBalance(balance.totalBalance);
+      const balance = await suiProviderRef.current.getBalance({
+        owner: addressId,
+      });
+      setBalance(Number(balance.totalBalance));
     } catch {}
   };
 

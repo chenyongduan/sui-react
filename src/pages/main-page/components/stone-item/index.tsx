@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Button, Input, Modal, Tooltip, notification } from "antd";
 import { useWalletKit } from "@mysten/wallet-kit";
-import { JsonRpcProvider } from "@mysten/sui.js";
+import { JsonRpcProvider, TransactionBlock } from "@mysten/sui.js";
 import { checkWalletConnect, fullPriceToSuiPrice } from "qUtils";
 import {
   STONE_MARKET_LIST_METHOD,
@@ -46,7 +46,7 @@ const NftItem: React.FC<Props> = (props) => {
     suiProvider,
     onRefreshEvent,
   } = props;
-  const { currentAccount, isConnected, signAndExecuteTransaction } =
+  const { currentAccount, isConnected, signAndExecuteTransactionBlock } =
     useWalletKit();
   const [isModalOpen, setModalOpen] = useState(false);
   const [priceValue, setPriceValue] = useState("1000000");
@@ -72,20 +72,20 @@ const NftItem: React.FC<Props> = (props) => {
   const onSellEvent = useCallback(async () => {
     if (!checkWalletConnect(isConnected)) return;
     try {
-      await signAndExecuteTransaction({
-        kind: "moveCall",
-        data: {
-          packageObjectId: STONE_PACKAGE_ID,
-          module: STONE_MARKET_MODULE_NAME,
-          function: STONE_MARKET_LIST_METHOD,
-          typeArguments: [STONE_TYPE],
-          arguments: [STONE_MARKET_SHARE_ID, id, priceValue],
-          gasBudget: 10000,
-        },
+      const tx = new TransactionBlock();
+      tx.moveCall({
+        target: `${STONE_PACKAGE_ID}::${STONE_MARKET_MODULE_NAME}::${STONE_MARKET_LIST_METHOD}`,
+        arguments: [
+          tx.pure(STONE_MARKET_SHARE_ID),
+          tx.pure(id),
+          tx.pure(priceValue),
+        ],
+        typeArguments: [STONE_TYPE],
       });
+      await signAndExecuteTransactionBlock({ transactionBlock: tx });
       setTimeout(() => {
         onRefreshEvent?.();
-      }, 4000);
+      }, 2000);
     } catch (e: any) {
       console.log("error=", e);
       notification.error({
@@ -119,25 +119,28 @@ const NftItem: React.FC<Props> = (props) => {
   const onBuyClick = useCallback(async () => {
     if (!checkWalletConnect(isConnected) || !listId) return;
     try {
-      const coins = await suiProvider.getCoins(currentAccount!, SUI_COIN_TYPE);
+      const coins = await suiProvider.getCoins({
+        owner: currentAccount?.address!,
+        coinType: SUI_COIN_TYPE,
+      });
       const coinIds = coins.data.map((coin) => {
         return coin.coinObjectId;
       });
       coinIds.pop();
-      await signAndExecuteTransaction({
-        kind: "moveCall",
-        data: {
-          packageObjectId: STONE_PACKAGE_ID,
-          module: STONE_MARKET_MODULE_NAME,
-          function: "purchase_and_take_mul_coins",
-          typeArguments: [STONE_TYPE],
-          arguments: [STONE_MARKET_SHARE_ID, listId, coinIds],
-          gasBudget: 10000,
-        },
+      const tx = new TransactionBlock();
+      tx.moveCall({
+        target: `${STONE_PACKAGE_ID}::${STONE_MARKET_MODULE_NAME}::purchase_and_take_mul_coins`,
+        arguments: [
+          tx.pure(STONE_MARKET_SHARE_ID),
+          tx.pure(listId),
+          tx.pure(coinIds),
+        ],
+        typeArguments: [STONE_TYPE],
       });
+      await signAndExecuteTransactionBlock({ transactionBlock: tx });
       setTimeout(() => {
         onRefreshEvent?.();
-      }, 4000);
+      }, 2000);
     } catch (e: any) {
       console.log("error=", e);
       notification.error({
@@ -150,20 +153,16 @@ const NftItem: React.FC<Props> = (props) => {
   const onGetBackClick = useCallback(async () => {
     if (!checkWalletConnect(isConnected) || !listId) return;
     try {
-      await signAndExecuteTransaction({
-        kind: "moveCall",
-        data: {
-          packageObjectId: STONE_PACKAGE_ID,
-          module: STONE_MARKET_MODULE_NAME,
-          function: "delist_and_take",
-          typeArguments: [STONE_TYPE],
-          arguments: [STONE_MARKET_SHARE_ID, listId],
-          gasBudget: 10000,
-        },
+      const tx = new TransactionBlock();
+      tx.moveCall({
+        target: `${STONE_PACKAGE_ID}::${STONE_MARKET_MODULE_NAME}::delist_and_take`,
+        arguments: [tx.pure(STONE_MARKET_SHARE_ID), tx.pure(listId)],
+        typeArguments: [STONE_TYPE],
       });
+      await signAndExecuteTransactionBlock({ transactionBlock: tx });
       setTimeout(() => {
         onRefreshEvent?.();
-      }, 4000);
+      }, 2000);
     } catch (e: any) {
       console.log("error=", e);
       notification.error({
@@ -177,7 +176,7 @@ const NftItem: React.FC<Props> = (props) => {
     ModalStone.show(attributes);
   }, [attributes]);
 
-  const isSelf = ownerId === currentAccount;
+  const isSelf = ownerId === currentAccount?.address;
   return (
     <div className={styles.baseView}>
       {!!attributes && <Stone attributes={attributes} onClick={onStoneClick} />}

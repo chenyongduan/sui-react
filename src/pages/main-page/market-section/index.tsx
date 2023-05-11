@@ -35,32 +35,48 @@ function MarketSection() {
   const refreshObjects = async (showLoading?: boolean) => {
     try {
       if (showLoading) setLoading(true);
-      const dynamicObjects = await suiProviderRef.current.getDynamicFields(
-        STONE_MARKET_SHARE_ID
-      );
+      const dynamicObjects = await suiProviderRef.current.getDynamicFields({
+        parentId: STONE_MARKET_SHARE_ID,
+      });
       if (isEmpty(dynamicObjects.data)) {
         setNftList([]);
         return;
       }
       const listIds = dynamicObjects.data.map((data) => data.objectId);
-      const list = await suiProviderRef.current.getObjectBatch(listIds);
+      const list = await suiProviderRef.current.multiGetObjects({
+        ids: listIds,
+        options: {
+          showContent: true,
+          showType: true,
+        },
+      });
       const promiseList = listIds.map(async (id) => {
-        return suiProviderRef.current.getDynamicFieldObject(id, "true");
+        return suiProviderRef.current.getDynamicFieldObject({
+          parentId: id,
+          name: {
+            type: "bool",
+            value: true,
+          },
+        });
       });
       const listObjects = await Promise.all(promiseList);
       const stoneList = listObjects.map((stone, index) => {
         const {
-          attributes,
-          id: { id },
-          url,
           // @ts-ignore
-        } = stone.details.data.fields;
+          fields: {
+            url,
+            id: { id },
+            attributes,
+          },
+        } = stone.data?.content;
         const {
-          price,
-          owner,
-          id: { id: listId },
           // @ts-ignore
-        } = list[index].details.data.fields;
+          fields: {
+            price,
+            owner,
+            id: { id: listId },
+          },
+        } = list[index]?.data?.content;
         return {
           attributes,
           id,
