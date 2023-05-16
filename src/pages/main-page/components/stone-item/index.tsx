@@ -49,7 +49,7 @@ const NftItem: React.FC<Props> = (props) => {
   const { currentAccount, isConnected, signAndExecuteTransactionBlock } =
     useWalletKit();
   const [isModalOpen, setModalOpen] = useState(false);
-  const [priceValue, setPriceValue] = useState("1000000");
+  const [priceValue, setPriceValue] = useState("100000000");
 
   const idText = useMemo(() => {
     return getShortId(id);
@@ -119,24 +119,14 @@ const NftItem: React.FC<Props> = (props) => {
   const onBuyClick = useCallback(async () => {
     if (!checkWalletConnect(isConnected) || !listId) return;
     try {
-      const coins = await suiProvider.getCoins({
-        owner: currentAccount?.address!,
-        coinType: SUI_COIN_TYPE,
-      });
-      const coinIds = coins.data.map((coin) => {
-        return coin.coinObjectId;
-      });
-      coinIds.pop();
       const tx = new TransactionBlock();
+      const [coin] = tx.splitCoins(tx.gas, [tx.pure(price)]);
       tx.moveCall({
-        target: `${STONE_PACKAGE_ID}::${STONE_MARKET_MODULE_NAME}::purchase_and_take_mul_coins`,
-        arguments: [
-          tx.pure(STONE_MARKET_SHARE_ID),
-          tx.pure(listId),
-          tx.pure(coinIds),
-        ],
+        target: `${STONE_PACKAGE_ID}::${STONE_MARKET_MODULE_NAME}::purchase_and_take_mut`,
+        arguments: [tx.pure(STONE_MARKET_SHARE_ID), tx.pure(listId), coin],
         typeArguments: [STONE_TYPE],
       });
+      tx.transferObjects([coin], tx.pure(currentAccount?.address));
       await signAndExecuteTransactionBlock({ transactionBlock: tx });
       setTimeout(() => {
         onRefreshEvent?.();
@@ -148,7 +138,7 @@ const NftItem: React.FC<Props> = (props) => {
         placement: "top",
       });
     }
-  }, [isConnected, listId, onRefreshEvent]);
+  }, [isConnected, listId, onRefreshEvent, price]);
 
   const onGetBackClick = useCallback(async () => {
     if (!checkWalletConnect(isConnected) || !listId) return;
